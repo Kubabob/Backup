@@ -1,69 +1,90 @@
 from numpy import *
 import matplotlib.pyplot as plt
 
-class Ellipsometry:
+class Elip_Structure:
     def __init__(self, theta_i, wave_length, thickness, *args) -> None:
         self.refractive_indexes = []
         self.complex_refractive_indexes = []
         
-        self.betas = []
+        self.theta_angles = [theta_i*pi/180]
 
+        #add (n, k) to list of refractive indexes
         for arg in args:
             self.refractive_indexes.append(arg)
 
+        #make a list of complex refractive indexes based on n and k
         for i in range(len(self.refractive_indexes)):
             self.complex_refractive_indexes.append(self.N(self.refractive_indexes[i][0], self.refractive_indexes[i][1]))
 
-        self.theta_angles = [theta_i * pi / 180, self.theta_j(i=0, j=1)]
-        '''for i in range(1, len(self.complex_refractive_indexes)-1):
+        #make list of theta angles for each layer
+        for i in range(len(self.complex_refractive_indexes)-1):
             self.theta_angles.append(self.theta_j(i=i, j=i+1))
-            #self.betas.append(self.beta())
-        else: print(self.theta_angles)'''
 
-        #self.theta_angles[0] = theta_i * pi / 180
         self.wave_length = wave_length
         self.thickness = thickness
+        
+        #print(f"N's: {self.complex_refractive_indexes}")
+        #print(f"thetas: {self.theta_angles}")
 
         pass
 
-    def beta(self, thickness = None, wave_length = None, Ni = None, Nj = None, theta_i = None, i: int = 0, j: int = 1):
+    def beta(self, thickness = None, wave_length = None, i: int = 0, j: int = 1):
+        '''
+        Returns beta of jth layer
+        '''
         if thickness == None:
             thickness = self.thickness
         if wave_length == None:
             wave_length = self.wave_length
-        '''if Ni == None:
-            Ni = self.complex_refractive_indexes[0]
-        if Nj == None:
-            Nj = self.complex_refractive_indexes[1]
-        if theta_i == None:
-            theta_i = self.theta_j()'''
-        Ni = self.complex_refractive_indexes[i]
+        #Ni = self.complex_refractive_indexes[i]
         Nj = self.complex_refractive_indexes[j]
-        theta_i = self.theta_angles[i]
-        return ((2*pi*thickness)/wave_length) * sqrt((Nj**2) - (Ni**2)*sin(theta_i)**2)
+        theta_j = self.theta_angles[j]
+        return ((2*pi*thickness)/wave_length) * Nj * cos(theta_j)
     
     def arg(self, complex_number):
+        '''
+        Returns argument(angle) of complex number
+
+        originally used to compare if numpy's angle func is any different from math arg
+
+        its not
+        '''
         if real(complex_number) > 0:
             return arctan(imag(complex_number) / real(complex_number))
-        else:
+        elif real(complex_number) < 0 and imag(complex_number) >= 0:
             return arctan(imag(complex_number) / real(complex_number)) + pi
+        else:
+            return arctan(imag(complex_number) / real(complex_number)) - pi
         
     def N(self, n, k):
-        return n - 1j*k
+        '''
+        Returns complex refractive index based on n and k
+
+        Note:
+            in some cases + and - are changed due to differences in other formulas
+        Default:
+            -
+        '''
+        return n - 1j*k #plus albo minus ?????
     
     def theta_j(self, Ni = None, Nj = None, theta_i = None, i: int = 0, j: int = 1):
-        '''if Ni == None:
-            Ni = self.complex_refractive_indexes[0]
-        if Nj == None:
-            Nj = self.complex_refractive_indexes[1]
-        if theta_i == None:
-            theta_i = self.theta_angles[0]'''
-        Ni = self.complex_refractive_indexes[i]
-        Nj = self.complex_refractive_indexes[j]
-        theta_i = self.theta_angles[i]
-        return arcsin((Ni * sin(theta_i)) / Nj) * pi / 180
+        '''
+        Calculates theta angle of jth layer based on Schnells formula
+        N0 sin(theta0) = N1 sin(theta1)
+        '''
+        if Ni != None and Nj != None and theta_i != None:
+            Ni = Ni
+            Nj = Nj
+            theta_i = theta_i
+        elif Ni == None and Nj == None and theta_i == None:
+            Ni = self.complex_refractive_indexes[i]
+            Nj = self.complex_refractive_indexes[j]
+            theta_i = self.theta_angles[i]
+        else:
+            raise ValueError
+        return arcsin((Ni/Nj) * sin(theta_i)) 
     
-    def r_p(self, Ni, Nj, theta_i):
+    '''def r_p(self, Ni, Nj, theta_i):
         Nji = Nj / Ni
         nominator = ((Nji**2) * cos(theta_i) - sqrt((Nji**2) - sin(theta_i)**2))
         denominator = ((Nji**2) * cos(theta_i) + sqrt((Nji**2) - sin(theta_i)**2))
@@ -75,63 +96,73 @@ class Ellipsometry:
         nominator = sqrt(cos(theta_i) - ((Nji**2) - sin(theta_i)**2))
         denominator = sqrt(cos(theta_i) + ((Nji**2) - sin(theta_i)**2))
         
-        return nominator / denominator
+        return nominator / denominator'''
     
-    def r_ij_p(self, Ni = None, Nj = None, theta_i = None, theta_j = None, i: int = 0, j: int = 1):
-        '''if Ni == None:
-            Ni = self.complex_refractive_indexes[0]
-        if Nj == None:
-            Nj = self.complex_refractive_indexes[1]
-        if theta_i == None:
-            theta_i = self.theta_angles[0]
-        if theta_j == None:
-            theta_j = self.theta_j(Ni, Nj, theta_i)'''
+    def r_ij_p(self, i: int = 0, j: int = 1, theta_i: int = None):
+        '''
+        Returns p- reflectance of 2 layers
+        Fresnells formula
+        '''
         Ni = self.complex_refractive_indexes[i]
         Nj = self.complex_refractive_indexes[j]
-        theta_i = self.theta_angles[i]
-        theta_j = self.theta_angles[j]
+        if theta_i != None:
+            theta_i = theta_i
+            theta_j = self.theta_j(Ni, Nj, theta_i)
+        else:
+            theta_i = self.theta_angles[i]
+            theta_j = self.theta_angles[j]
 
         nominator = (Nj * cos(theta_i) - Ni * cos(theta_j))
         denominator = (Nj * cos(theta_i) + Ni * cos(theta_j))
 
-        self.r_01_p = nominator / denominator
-
-        return self.r_01_p
+        return nominator / denominator
     
-    def r_ij_s(self, Ni = None, Nj = None, theta_i = None, theta_j = None, i: int = 0, j: int = 1):
-        '''if Ni == None:
-            Ni = self.complex_refractive_indexes[0]
-        if Nj == None:
-            Nj = self.complex_refractive_indexes[1]
-        if theta_i == None:
-            theta_i = self.theta_angles[0]
-        if theta_j == None:
-            theta_j = self.theta_j(Ni, Nj, theta_i)'''
+    def r_ij_s(self, i: int = 0, j: int = 1, theta_i: int = None):
+        '''
+        Returns s- reflectance of 2 layers
+        Fresnells formula
+        '''
         
         Ni = self.complex_refractive_indexes[i]
         Nj = self.complex_refractive_indexes[j]
-        theta_i = self.theta_angles[i]
-        theta_j = self.theta_angles[j]
+        if theta_i != None:
+            theta_i = theta_i
+            theta_j = self.theta_j(Ni, Nj, theta_i)
+        else:
+            theta_i = self.theta_angles[i]
+            theta_j = self.theta_angles[j]
 
         nominator = (Ni * cos(theta_i) - Nj * cos(theta_j))
         denominator = (Ni * cos(theta_i) + Nj * cos(theta_j))
 
-        self.r_01_s = nominator / denominator
-
-        return self.r_01_s
+        return nominator / denominator
     
     def R_p(self, r_p):
+        '''
+        Returns p- reflectance but in a representative/comparative form rather than calculational
+        '''
         return abs(r_p)**2
     
     def R_s(self, r_s):
+        '''
+        Returns s- reflectance but in a representative/comparative form rather than calculational
+        '''
         return abs(r_s)**2
 
     def R_n(self, R_p, R_s):
+        '''
+        Returns mean value of p- and s- comparative reflectances
+        
+        Shown on refractiveindex.info so maybe somewhat useful
+        '''
         return (R_p + R_s)/2
     
     def tan_psi_exp_mdeltai(self, psi = None, delta = None, r_p = None, r_s = None):
+        '''
+        Probably the most important formula here calculating rho which is tan(psi) * exp(-1i*delta)
+        '''
         if psi != None and delta != None:
-            return tan(psi) * exp(1j * delta)
+            return tan(psi) * exp(-1j * delta)
         elif r_p != None and r_s != None:
             return r_p / r_s
         elif r_p == None and r_s == None and psi == None and delta == None:
@@ -140,81 +171,222 @@ class Ellipsometry:
             return r_p / r_s
         else: raise ValueError
 
-    def r_ijk_p(self, r_ij_p = None, r_jk_p = None, beta = None, i: int = 0, j: int = 1, k: int = 2):
-        '''if r_ij_p == None:
-            r_ij_p = self.r_ij_p()
-        if r_jk_p == None:
-            r_jk_p = self.r_ij_p(self.complex_refractive_indexes[1],
-                                 self.complex_refractive_indexes[2],
-                                 self.theta_j(self.complex_refractive_indexes[0],
-                                              self.complex_refractive_indexes[1]))
-        if beta == None:
-            beta = self.beta()'''
-        
-        r_ij_p = self.r_ij_p(i=i, j=j)
-        r_jk_p = self.r_ij_p(i=j,j=k)
+    def r_ijk_p(self, i: int = 0, j: int = 1, k: int = 2, theta_i: int = None):
+        '''
+        Returns p- reflectance of 3 layer structure
+        '''
+        if theta_i == None:
+            r_ij_p = self.r_ij_p(i=i, j=j)
+            r_jk_p = self.r_ij_p(i=j,j=k)
+        else:
+            r_ij_p = self.r_ij_p(i, j, theta_i)
+            r_jk_p = self.r_ij_p(j, k, theta_i)
         beta = self.beta(i=i, j=j)
 
-        nominator = (r_ij_p + r_jk_p * exp(-2j*beta))
-        denominator = (1 + r_ij_p * r_jk_p * exp(-2j*beta))
+        nominator = (r_ij_p + r_jk_p * exp(-1j*2*beta))
+        denominator = (1 + r_ij_p * r_jk_p * exp(-1j*2*beta))
 
         return nominator / denominator
     
-    def r_ijk_s(self, r_ij_s = None, r_jk_s = None, beta = None, i: int = 0, j: int = 1, k: int = 2):
-        '''if r_ij_s == None:
-            r_ij_s = self.r_ij_s()
-        if r_jk_s == None:
-            r_jk_s = self.r_ij_s(self.complex_refractive_indexes[1],
-                                 self.complex_refractive_indexes[2],
-                                 self.theta_j(self.complex_refractive_indexes[0],
-                                              self.complex_refractive_indexes[1]))
-        if beta == None:
-            beta = self.beta()'''
+    def r_ijk_s(self, i: int = 0, j: int = 1, k: int = 2, theta_i: int = None):
+        '''
+        Returns s- reflectance of 3 layer structure
+        '''
         
-        r_ij_s = self.r_ij_s(i=i, j=j)
-        r_jk_s = self.r_ij_s(i=j, j=k)
+        if theta_i == None:
+            r_ij_s = self.r_ij_s(i=i, j=j)
+            r_jk_s = self.r_ij_s(i=j,j=k)
+        else:
+            r_ij_s = self.r_ij_s(i, j, theta_i)
+            r_jk_s = self.r_ij_s(j, k, theta_i)
         beta = self.beta(i=i, j=j)
 
-        nominator = (r_ij_s + r_jk_s * exp(-2j*beta))
-        denominator = (1 + r_ij_s * r_jk_s * exp(-2j*beta))
+        nominator = (r_ij_s + r_jk_s * exp(-1j*2*beta))
+        denominator = (1 + r_ij_s * r_jk_s * exp(-1j*2*beta))
 
         return nominator / denominator
     
     def psi(self, r_p = None, r_s = None):
+        '''
+        Returns psi in radians
+        '''
         if r_p == None:
             r_p = self.r_ij_p()
         if r_s == None:
             r_s = self.r_ij_s()
-        return arctan(abs(r_p) / abs(r_s))
+        #print(abs(r_p) ,abs(r_s))
+        return arctan(abs(r_p) / abs(r_s)) 
     
     def delta(self, r_p = None, r_s = None):
+        '''
+        Returns delta in radians
+        '''
         if r_p == None:
             r_p = self.r_ij_p()
         if r_s == None:
             r_s = self.r_ij_s()
         
-        return self.arg(r_p) - self.arg(r_s)
+        #return self.arg(r_p) - self.arg(r_s)
+        #return angle(r_p) - angle(r_s)
+        return angle(r_p/r_s) #plus albo minus ????
     
-    def reflectance_plot(self):
+    def reflectance_plot(self, layers: int = 2):
+        '''
+        Shows p- s- and mean reflectance plots for choosen structure
+
+        Default 2 top layers
+        '''
         x = linspace(0, 90, num=900)
-        y_p = [self.R_p(self.r_ij_p(theta_i=(angle*pi/180))) for angle in x]
-        y_s = [self.R_s(self.r_ij_s(theta_i=(angle*pi/180))) for angle in x]
-        y_n = [self.R_n(y_p[i], y_s[i]) for i in range(len(x))]
+        if layers == 2:
+            y_p = [self.R_p(self.r_ij_p(theta_i=(angle*pi/180))) for angle in x]
+            y_s = [self.R_s(self.r_ij_s(theta_i=(angle*pi/180))) for angle in x]
+            y_n = [self.R_n(y_p[i], y_s[i]) for i in range(len(x))]
+        elif layers == 3:
+            y_p = [self.R_p(self.r_ijk_p(theta_i=(angle*pi/180))) for angle in x]
+            y_s = [self.R_s(self.r_ijk_s(theta_i=(angle*pi/180))) for angle in x]
+            y_n = [self.R_n(y_p[i], y_s[i]) for i in range(len(x))]
+        else:
+            raise ValueError
 
         plt.plot(x, y_p)
         plt.plot(x, y_s)
         plt.plot(x, y_n)
+        plt.grid()
         plt.show()
 
-'''Si_6328 = (3.8827, 0.019626)
-Air_6328 = (1.00027653, 0)
-SiO2_6328 = (1.4570, 0)'''
+    '''def psi_delta_plot(self):
+        #plot of psi and delta diffs of wave_length change
+        psi = []
+        delta = []
+        x = [i for i in range(250, 1250, 1)]
 
-'''E_model = Ellipsometry(70, 0.6328, Air_6328, Si_6328)
+        for wave_length_nm in x:
+            wave_length_um = wave_length_nm / 1000
+            #exp_beta = ellipsometry_exp.beta(i=0,j=1)
+            exp_r_ijk_p = self.r_ijk_p()
+            exp_r_ijk_s = self.r_ijk_s()
+            exp_psi = self.psi(
+                r_p=exp_r_ijk_p,
+                r_s=exp_r_ijk_s)
+            exp_delta = self.delta(
+                r_p=exp_r_ijk_p,
+                r_s=exp_r_ijk_s,
+            )
 
-#E_model.reflectance_plot()
+            psi.append(rad2deg(exp_psi))
+            delta.append(rad2deg(exp_delta))
+        else:
+            plt.plot(x, psi)
+            plt.plot(x, delta)
+            plt.grid()
+            plt.show()'''
 
-model_value = E_model.tan_psi_exp_mdeltai()
+def get_thickness(angle: int = 0):
+    fitness_results = {}
+    psis = {}
+    deltas = {}
+    x = arange(0, 1000, 1)
+    for thickness_nm in x:
+        #for the sake of math formulas i change nm to um
+        thickness_um = thickness_nm/1000
 
-print(model_value)
-'''
+        #4 angle options in degrees
+        if angle == 0:
+            angle1 = 45
+
+            #600 45 deg
+            model_psi = 34.66707
+            model_delta = 18.1176
+            #700 45 deg
+            model_psi2 = 34.1864
+            model_delta2 = 17.05903
+        elif angle == 1:
+            angle1 = 55
+
+            #600 55 deg
+            model_psi = 180.0273
+            model_delta = 179.7674
+            #700 55 deg
+            model_psi2 = 179.9559
+            model_delta2 = 179.95126
+        elif angle == 2:
+            angle1 = 65
+
+            #600 65 deg
+            model_psi = 28.0328
+            model_delta = 1.67467
+            #700 65 deg
+            model_psi2 = 27.43605
+            model_delta2 = 0.396
+        elif angle == 3:
+            angle1 = 75
+
+            #600 75 deg
+            model_psi = 179.80653
+            model_delta = 177.64632
+            #700 75 deg
+            model_psi2 = 179.71513
+            model_delta2 = 164.25052
+
+        wave_length1 = 0.6
+        wave_length2 = 0.7
+        #complex refractive index of air
+        N0 = (1, 0)
+        
+        #cri of SiO2 and Si 0.6 um
+        N1 = (1.4542, 0)
+        N2 = (3.7348, 0.0090921)
+
+        #cri of SiO2 and Si 0.7 um
+        N3 = (1.4553, 0)
+        N4 = (3.7838, 0.012170)
+
+        
+        #we make 2 structures of 3 layers: air SiO2 Si
+        exp_structure1 = Elip_Structure(angle1, wave_length1, thickness_um, N0, N1, N2)
+        exp_structure2 = Elip_Structure(angle1, wave_length2, thickness_um, N0, N3, N4)
+        
+
+        #get p- and s- reflectances of first 3 layer structure
+        exp_r_ijk_p = exp_structure1.r_ijk_p(i=0,j=1,k=2)
+        exp_r_ijk_s = exp_structure1.r_ijk_s(i=0,j=1,k=2)
+        #calculate psi and delta(in degrees) out of reflectances 
+        exp_psi = rad2deg(exp_structure1.psi(
+                r_p=exp_r_ijk_p,
+                r_s=exp_r_ijk_s
+                ))
+        exp_delta = rad2deg(exp_structure1.delta(
+            r_p=exp_r_ijk_p,
+            r_s=exp_r_ijk_s
+            ))
+
+        #same for the 2nd structure
+        exp_r_ijk_p2 = exp_structure2.r_ijk_p(i=0,j=1,k=2)
+        exp_r_ijk_s2 = exp_structure2.r_ijk_s(i=0,j=1,k=2)
+        exp_psi2 = rad2deg(exp_structure2.psi(
+                r_p=exp_r_ijk_p2,
+                r_s=exp_r_ijk_s2
+                ))
+        exp_delta2 = rad2deg(exp_structure2.delta(
+            r_p=exp_r_ijk_p2,
+            r_s=exp_r_ijk_s2
+            ))
+        
+        #gather results
+        fitness_results[thickness_nm] = -sqrt((((model_psi - exp_psi))**2 + ((model_delta - exp_delta))**2 + ((model_psi2 - exp_psi2))**2 + ((model_delta2 - exp_delta2))**2))
+        psis[thickness_nm] = (exp_psi, exp_psi2)
+        deltas[thickness_nm] = (exp_delta, exp_delta2)
+
+    else:
+        max_fitness = max(fitness_results.values())
+        thickness = [i for i in fitness_results if fitness_results[i]==max_fitness]
+        thickness = thickness[0]
+
+        print(f"Thickness: {thickness} nm")
+        print(f'Psis: {psis[thickness]}')
+        print(f'Deltas: {deltas[thickness]}')
+        
+        plt.plot(x, fitness_results.values())
+        plt.show()
+
+get_thickness(angle=3)
