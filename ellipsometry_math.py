@@ -3,6 +3,11 @@ import matplotlib.pyplot as plt
 
 class Elip_Structure:
     def __init__(self, theta_i, wave_length, thickness, *args) -> None:
+        '''
+        We need to specify entry parameters, args are tuples of n and k of given material
+
+        if we want to use function that shows plot of for ex. angle then we can just specify parameter as 0
+        '''
         self.refractive_indexes = []
         self.complex_refractive_indexes = []
         
@@ -22,9 +27,6 @@ class Elip_Structure:
 
         self.wave_length = wave_length
         self.thickness = thickness
-        
-        #print(f"N's: {self.complex_refractive_indexes}")
-        #print(f"thetas: {self.theta_angles}")
 
         pass
 
@@ -65,7 +67,7 @@ class Elip_Structure:
         Default:
             -
         '''
-        return n - 1j*k #plus albo minus ?????
+        return n - 1j*k 
     
     def theta_j(self, Ni = None, Nj = None, theta_i = None, i: int = 0, j: int = 1):
         '''
@@ -83,6 +85,8 @@ class Elip_Structure:
         else:
             raise ValueError
         return arcsin((Ni/Nj) * sin(theta_i)) 
+    
+    #not useful
     
     '''def r_p(self, Ni, Nj, theta_i):
         Nji = Nj / Ni
@@ -171,7 +175,7 @@ class Elip_Structure:
             return r_p / r_s
         else: raise ValueError
 
-    def r_ijk_p(self, i: int = 0, j: int = 1, k: int = 2, theta_i: int = None):
+    def r_ijk_p(self, i: int = 0, j: int = 1, k: int = 2, theta_i: int = None, thickness: float = None, wave_length: float = None):
         '''
         Returns p- reflectance of 3 layer structure
         '''
@@ -181,14 +185,22 @@ class Elip_Structure:
         else:
             r_ij_p = self.r_ij_p(i, j, theta_i)
             r_jk_p = self.r_ij_p(j, k, theta_i)
-        beta = self.beta(i=i, j=j)
+
+        if thickness != None and wave_length != None:
+            beta = self.beta(i=i, j=j, thickness=thickness, wave_length=wave_length)
+        elif thickness != None and wave_length == None:
+            beta = self.beta(i=i, j=j, thickness=thickness)
+        elif thickness == None and wave_length != None:
+            beta = self.beta(i=i, j=j, wave_length=wave_length)
+        else:
+            beta = self.beta(i=i, j=j)
 
         nominator = (r_ij_p + r_jk_p * exp(-1j*2*beta))
         denominator = (1 + r_ij_p * r_jk_p * exp(-1j*2*beta))
 
         return nominator / denominator
     
-    def r_ijk_s(self, i: int = 0, j: int = 1, k: int = 2, theta_i: int = None):
+    def r_ijk_s(self, i: int = 0, j: int = 1, k: int = 2, theta_i: int = None, thickness: float = None, wave_length: float = None):
         '''
         Returns s- reflectance of 3 layer structure
         '''
@@ -199,7 +211,15 @@ class Elip_Structure:
         else:
             r_ij_s = self.r_ij_s(i, j, theta_i)
             r_jk_s = self.r_ij_s(j, k, theta_i)
-        beta = self.beta(i=i, j=j)
+        
+        if thickness != None and wave_length != None:
+            beta = self.beta(i=i, j=j, thickness=thickness, wave_length=wave_length)
+        elif thickness != None and wave_length == None:
+            beta = self.beta(i=i, j=j, thickness=thickness)
+        elif thickness == None and wave_length != None:
+            beta = self.beta(i=i, j=j, wave_length=wave_length)
+        else:
+            beta = self.beta(i=i, j=j)
 
         nominator = (r_ij_s + r_jk_s * exp(-1j*2*beta))
         denominator = (1 + r_ij_s * r_jk_s * exp(-1j*2*beta))
@@ -226,9 +246,12 @@ class Elip_Structure:
         if r_s == None:
             r_s = self.r_ij_s()
         
-        #return self.arg(r_p) - self.arg(r_s)
-        #return angle(r_p) - angle(r_s)
-        return angle(r_p/r_s) #plus albo minus ????
+
+        delta = angle(r_p/r_s)
+        if delta < 0:
+            return 2*pi + delta
+        else:
+            return delta
     
     def reflectance_plot(self, layers: int = 2):
         '''
@@ -254,34 +277,37 @@ class Elip_Structure:
         plt.grid()
         plt.show()
 
-    '''def psi_delta_plot(self):
-        #plot of psi and delta diffs of wave_length change
-        psi = []
-        delta = []
-        x = [i for i in range(250, 1250, 1)]
+    def psi_delta_plot(self, layers: int = 2, is_thickness: bool = False, thickness_range: tuple = (0, 1), is_wave_length: bool = False, wave_length_range: tuple = (1, 2000)):
+        '''
+        Returns plot of psi and delta of given structure
 
-        for wave_length_nm in x:
-            wave_length_um = wave_length_nm / 1000
-            #exp_beta = ellipsometry_exp.beta(i=0,j=1)
-            exp_r_ijk_p = self.r_ijk_p()
-            exp_r_ijk_s = self.r_ijk_s()
-            exp_psi = self.psi(
-                r_p=exp_r_ijk_p,
-                r_s=exp_r_ijk_s)
-            exp_delta = self.delta(
-                r_p=exp_r_ijk_p,
-                r_s=exp_r_ijk_s,
-            )
-
-            psi.append(rad2deg(exp_psi))
-            delta.append(rad2deg(exp_delta))
+        if we have 3 layer structure we need to decide whether we want plot of thickness or wave length
+        '''
+        if layers == 2:
+            x = linspace(0, 90, num=900)
+            y_psi = [rad2deg(self.psi(r_p=self.r_ij_p(theta_i=angle*pi/180), r_s=self.r_ij_s(theta_i=angle*pi/180))) for angle in x]
+            y_delta = [rad2deg(self.delta(r_p=self.r_ij_p(theta_i=angle*pi/180), r_s=self.r_ij_s(theta_i=angle*pi/180))) for angle in x]
+        elif layers == 3 and is_thickness:
+            x = linspace(thickness_range[0], thickness_range[1], num=thickness_range[1]*1000)
+            y_psi = [rad2deg(self.psi(r_p=self.r_ijk_p(thickness=thickness), r_s=self.r_ijk_s(thickness=thickness))) for thickness in x]
+            y_delta = [rad2deg(self.delta(r_p=self.r_ijk_p(thickness=thickness), r_s=self.r_ijk_s(thickness=thickness))) for thickness in x]
+        elif layers == 3 and is_wave_length:
+            x = linspace(wave_length_range[0], wave_length_range[1], num=wave_length_range[1])
+            y_psi = [rad2deg(self.psi(r_p=self.r_ijk_p(wave_length=wave_length), r_s=self.r_ijk_s(wave_length=wave_length))) for wave_length in x]
+            y_delta = [rad2deg(self.delta(r_p=self.r_ijk_p(wave_length=wave_length), r_s=self.r_ijk_s(wave_length=wave_length))) for wave_length in x]
         else:
-            plt.plot(x, psi)
-            plt.plot(x, delta)
-            plt.grid()
-            plt.show()'''
+            raise ValueError
+
+        plt.plot(x, y_psi)
+        plt.plot(x, y_delta)
+        plt.grid()
+        plt.show()
+
 
 def get_thickness(angle: int = 0):
+    '''
+    Doesnt work, probably wrong model psis and deltas
+    '''
     fitness_results = {}
     psis = {}
     deltas = {}
@@ -389,4 +415,4 @@ def get_thickness(angle: int = 0):
         plt.plot(x, fitness_results.values())
         plt.show()
 
-get_thickness(angle=3)
+#get_thickness(angle=1)
