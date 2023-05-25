@@ -1,5 +1,6 @@
 from numpy import *
 import matplotlib.pyplot as plt
+import pandas as pd
 
 class Elip_Structure:
     def __init__(self, theta_i, wave_length, thickness, *args) -> None:
@@ -226,14 +227,18 @@ class Elip_Structure:
 
         return nominator / denominator
     
-    def psi(self, r_p = None, r_s = None):
+    def psi(self,layers: int = 2, r_p = None, r_s = None):
         '''
         Returns psi in radians
         '''
-        if r_p == None:
-            r_p = self.r_ij_p()
-        if r_s == None:
-            r_s = self.r_ij_s()
+        if layers == 2:
+            if r_p == None:
+                r_p = self.r_ij_p()
+            if r_s == None:
+                r_s = self.r_ij_s()
+        '''elif layers == 3:
+            if r_p == None:
+                r_p = self.r_ijk_p()'''
         #print(abs(r_p) ,abs(r_s))
         return arctan(abs(r_p) / abs(r_s)) 
     
@@ -302,6 +307,24 @@ class Elip_Structure:
         plt.plot(x, y_delta)
         plt.grid()
         plt.show()
+
+    '''def wave_length_spectrum(self):
+        Si = pd.read_csv('Si_nk.csv', sep=',')
+        SiO2 = pd.read_csv('SiO2_nk.csv', sep=',')
+
+        psis = {}
+        deltas = {}
+        for index, wave_length in enumerate(SiO2['wvl']):
+            #structure = Elip_Structure(70, 0, 0.7, (1,0), (float(SiO2['n'][index]), 0), (float(Si['n'][index]), float(Si['k'][index])))
+            
+            self.complex_refractive_indexes = [(1,0), (float(SiO2['n'][index]), 0), (float(Si['n'][index]), float(Si['k'][index]))]
+            psis[wave_length] = self.psi(r_p=self.r_ijk_p(wave_length=wave_length), r_s=self.r_ijk_s(wave_length=wave_length))   
+            deltas[wave_length] = self.delta(r_p=self.r_ijk_p(wave_length=wave_length), r_s=self.r_ijk_s(wave_length=wave_length))
+        else:
+            plt.plot(psis.keys(), psis.values())
+            plt.plot(deltas.keys(), deltas.values())
+            plt.grid()
+            plt.show()'''
 
 
 def get_thickness(angle: int = 0):
