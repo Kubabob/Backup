@@ -199,8 +199,12 @@ class Elip_Structure:
         nominator = (r_ij_p + r_jk_p * exp(-1j*2*beta))
         denominator = (1 + r_ij_p * r_jk_p * exp(-1j*2*beta))
 
-        return nominator / denominator
-    
+        if denominator != 0:
+            return nominator / denominator
+        else:
+            #print('Division by 0')
+            pass
+
     def r_ijk_s(self, i: int = 0, j: int = 1, k: int = 2, theta_i: int = None, thickness: float = None, wave_length: float = None):
         '''
         Returns s- reflectance of 3 layer structure
