@@ -383,8 +383,8 @@ def GA_2(solution):
 
     #ellipsometry_get_thickness2.plot_fitness()
 
-for _ in range(10):
-    GA_2(GA_1())
+'''for _ in range(10):
+    GA_2(GA_1())'''
 
 def grid_search(solution):
     model_psi_600 = 0.6340659294825799
@@ -549,3 +549,20 @@ def gradient_search(solution):
         print(f'Thickness: {max(results_3, key=results_3.get)}')
 
 #gradient_search(solution)
+
+el7 = Elip_Structure(70, 0.451, 0.3, (1,0), (1.75, 0.041), (4.6680, 0.14650))
+el8 = Elip_Structure(70, 0.551, 0.3, (1,0), (1.74, 0.012), (4.0837, 0.040229))
+
+model_psi_451nm_300nm = el7.psi(r_p=el7.r_ijk_p(wave_length=0.451, thickness=0.3), r_s=el7.r_ijk_s(wave_length=0.451, thickness=0.3))
+model_delta_451nm_300nm = el7.delta(r_p=el7.r_ijk_p(wave_length=0.451, thickness=0.3), r_s=el7.r_ijk_s(wave_length=0.451, thickness=0.3))
+
+model_psi_551nm_300nm = el8.psi(r_p=el8.r_ijk_p(wave_length=0.551, thickness=0.3), r_s=el8.r_ijk_s(wave_length=0.551, thickness=0.3))
+model_delta_551nm_300nm = el8.delta(r_p=el8.r_ijk_p(wave_length=0.551, thickness=0.3), r_s=el8.r_ijk_s(wave_length=0.551, thickness=0.3))
+
+
+'''print(f'model psi 451nm 300nm: {model_psi_451nm_300nm}')
+print(f'model delta 451nm 300nm: {model_delta_451nm_300nm}\n')
+print(f'model psi 551nm 300nm: {model_psi_551nm_300nm}')
+print(f'model delta 551nm 300nm: {model_delta_551nm_300nm}')'''
+
+el7.psi_delta_plot(layers=3, is_thickness=True)
