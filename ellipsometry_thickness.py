@@ -291,10 +291,10 @@ def wave_length_spectrum(angle, thickness):
 #wave_length_spectrum(70, 0.45)
 
 def fitness_func(ga_solution, solution, solution_idx):
-    model_psi_600 = rad2deg(0.6340659294825799)
-    model_delta_600 = rad2deg(4.881929806502101)
-    model_psi_700 = rad2deg(1.0735215481969287)
-    model_delta_700 = rad2deg(1.4473917434606296)
+    model_psi_600 = 0.6340659294825799
+    model_delta_600 = 4.881929806502101
+    model_psi_700 = 1.0735215481969287
+    model_delta_700 = 1.4473917434606296
 
     Si = pd.read_csv('Si_nk.csv')
     #wave_lengths = arange(0.25, 1, 0.005)
@@ -312,44 +312,50 @@ def fitness_func(ga_solution, solution, solution_idx):
         exp_structure1 = Elip_Structure(70, 0.6, solution[3], (1,0), (cauchy_plot[0.6], 0), (Si['n'][70], Si['k'][70]))
         exp_structure2 = Elip_Structure(70, 0.7, solution[3], (1,0), (cauchy_plot[0.7], 0), (Si['n'][90], Si['k'][90]))
 
-        return 1-sqrt((rad2deg(exp_structure1.psi(r_p=exp_structure1.r_ijk_p(wave_length=0.6), r_s=exp_structure1.r_ijk_s(wave_length=0.6))) - model_psi_600)**2
-                    + (rad2deg(exp_structure1.delta(r_p=exp_structure1.r_ijk_p(wave_length=0.6), r_s=exp_structure1.r_ijk_s(wave_length=0.6))) - model_delta_600)**2
-                    + (rad2deg(exp_structure2.psi(r_p=exp_structure2.r_ijk_p(wave_length=0.7), r_s=exp_structure2.r_ijk_s(wave_length=0.7))) - model_psi_700)**2
-                    + (rad2deg(exp_structure2.delta(r_p=exp_structure2.r_ijk_p(wave_length=0.7), r_s=exp_structure2.r_ijk_s(wave_length=0.7))) - model_delta_700)**2) 
+        return 1-sqrt((exp_structure1.psi(r_p=exp_structure1.r_ijk_p(wave_length=0.6), r_s=exp_structure1.r_ijk_s(wave_length=0.6)) - model_psi_600)**2
+                    + (exp_structure1.delta(r_p=exp_structure1.r_ijk_p(wave_length=0.6), r_s=exp_structure1.r_ijk_s(wave_length=0.6)) - model_delta_600)**2
+                    + (exp_structure2.psi(r_p=exp_structure2.r_ijk_p(wave_length=0.7), r_s=exp_structure2.r_ijk_s(wave_length=0.7)) - model_psi_700)**2
+                    + (exp_structure2.delta(r_p=exp_structure2.r_ijk_p(wave_length=0.7), r_s=exp_structure2.r_ijk_s(wave_length=0.7)) - model_delta_700)**2)*10
     else:
-        return -100
+        return -10
 
 
-ellipsometry_get_thickness = pg.GA(
-    num_generations=100,
-    num_parents_mating=50,
-    fitness_func=fitness_func,
-    sol_per_pop=500,
-    num_genes=4,
-    gene_space=[arange(1,2,0.001), arange(0.001,0.1,0.001), arange(0,0.1,0.01), arange(0,1,0.00001)],
-    parent_selection_type='rank',
-    keep_elitism=10,
-    mutation_type='random',
-    mutation_probability=0.2,
-    #stop_criteria='reach_0.95'
-)
 
 
-start_time = time.time()
-ellipsometry_get_thickness.run()
+for _ in range(10):
+    ellipsometry_get_thickness = pg.GA(
+        num_generations=30,
+        num_parents_mating=30,
+        fitness_func=fitness_func,
+        sol_per_pop=300,
+        num_genes=4,
+        gene_space=[arange(1,2,0.001), arange(0.001,0.01,0.0002), arange(0,0.1,0.01), arange(0,1,0.00001)],
+        parent_selection_type='rank',
+        keep_elitism=5,
+        mutation_type='random',
+        mutation_probability=0.5,
+        random_mutation_min_val=-0.03,
+        random_mutation_max_val=0.03,
+        crossover_type='two_points',
+        random_seed=random.randint(1,10),
+        #stop_criteria='reach_0.95'
+    )
 
-solution, solution_fitness, solution_idx = ellipsometry_get_thickness.best_solution()
-print(f"Parameters of the best solution: {solution}")
-print(f"Fitness value of the best solution = {solution_fitness}\n")
-print(f'It took: {time.time() - start_time} seconds')
+    start_time = time.time()
+    ellipsometry_get_thickness.run()
 
-ellipsometry_get_thickness.plot_fitness()
+    solution, solution_fitness, solution_idx = ellipsometry_get_thickness.best_solution()
+    print(f"Parameters of the best solution: {solution}")
+    print(f"Fitness value of the best solution = {solution_fitness}")
+    print(f'It took: {time.time() - start_time} seconds\n')
+
+#ellipsometry_get_thickness.plot_fitness()
 
 def grid_search(solution):
-    model_psi_600 = rad2deg(0.6340659294825799)
-    model_delta_600 = rad2deg(4.881929806502101)
-    model_psi_700 = rad2deg(1.0735215481969287)
-    model_delta_700 = rad2deg(1.4473917434606296)
+    model_psi_600 = 0.6340659294825799
+    model_delta_600 = 4.881929806502101
+    model_psi_700 = 1.0735215481969287
+    model_delta_700 = 1.4473917434606296
 
     Si = pd.read_csv('Si_nk.csv')
     #wave_lengths = arange(0.25, 1, 0.005)
@@ -371,10 +377,10 @@ def grid_search(solution):
             exp_structure1 = Elip_Structure(70, 0.6, thickness, (1,0), (cauchy_plot[0.6], 0), (Si['n'][70], Si['k'][70]))
             exp_structure2 = Elip_Structure(70, 0.7, thickness, (1,0), (cauchy_plot[0.7], 0), (Si['n'][90], Si['k'][90]))
 
-            fitness_results[thickness] = 1-sqrt((rad2deg(exp_structure1.psi(r_p=exp_structure1.r_ijk_p(wave_length=0.6), r_s=exp_structure1.r_ijk_s(wave_length=0.6))) - model_psi_600)**2
-                        + (rad2deg(exp_structure1.delta(r_p=exp_structure1.r_ijk_p(wave_length=0.6), r_s=exp_structure1.r_ijk_s(wave_length=0.6))) - model_delta_600)**2
-                        + (rad2deg(exp_structure2.psi(r_p=exp_structure2.r_ijk_p(wave_length=0.7), r_s=exp_structure2.r_ijk_s(wave_length=0.7))) - model_psi_700)**2
-                        + (rad2deg(exp_structure2.delta(r_p=exp_structure2.r_ijk_p(wave_length=0.7), r_s=exp_structure2.r_ijk_s(wave_length=0.7))) - model_delta_700)**2) 
+            fitness_results[thickness] = 1-sqrt((exp_structure1.psi(r_p=exp_structure1.r_ijk_p(wave_length=0.6), r_s=exp_structure1.r_ijk_s(wave_length=0.6)) - model_psi_600)**2
+                        + (exp_structure1.delta(r_p=exp_structure1.r_ijk_p(wave_length=0.6), r_s=exp_structure1.r_ijk_s(wave_length=0.6)) - model_delta_600)**2
+                        + (exp_structure2.psi(r_p=exp_structure2.r_ijk_p(wave_length=0.7), r_s=exp_structure2.r_ijk_s(wave_length=0.7)) - model_psi_700)**2
+                        + (exp_structure2.delta(r_p=exp_structure2.r_ijk_p(wave_length=0.7), r_s=exp_structure2.r_ijk_s(wave_length=0.7)) - model_delta_700)**2) 
             
             '''if new_fitness > best_fitness:
                 best_fitness = new_fitness
