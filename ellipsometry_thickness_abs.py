@@ -24,10 +24,10 @@ def wave_length_spectrum(angle, thickness):
         print(f'Psi and delta for 0.6um: {psis[0.6]} {deltas[0.6]}\nPsi and delta for 0.7um: {psis[0.7]} {deltas[0.7]}')
 
 def fitness_func(ga_solution, solution, solution_idx):
-    model_psi_451 = 0.12931447242366356
-    model_delta_451 = 3.617999055054228
-    model_psi_551 = 0.7740248774457947
-    model_delta_551 = 5.410573333883566
+    model_psi_451 = 0.6340659294825799
+    model_delta_451 = 4.881929806502101
+    model_psi_551 = 1.0735215481969287
+    model_delta_551 = 1.4473917434606296
 
     #Si = pd.read_csv('Si_nk.csv')
     Si_n_451 = 4.6680
@@ -36,12 +36,12 @@ def fitness_func(ga_solution, solution, solution_idx):
     Si_k_551 = 0.040229
     cauchy_plot = {}
 
-    cauchy_plot[0.451] = solution[0] + solution[1]/0.451**2 + solution[2]/0.451**4
-    cauchy_plot[0.551] = solution[0] + solution[1]/0.551**2 + solution[2]/0.551**4
+    cauchy_plot[0.6] = solution[0] + solution[1]/0.6**2 + solution[2]/0.6**4
+    cauchy_plot[0.7] = solution[0] + solution[1]/0.7**2 + solution[2]/0.7**4
 
-    if cauchy_plot[0.451] != 0 and cauchy_plot[0.551] != 0:
-        exp_structure1 = Elip_Structure(70, 0.451, solution[3], (1,0), (cauchy_plot[0.451], solution[4]), (Si_n_451, Si_k_451))
-        exp_structure2 = Elip_Structure(70, 0.551, solution[3], (1,0), (cauchy_plot[0.551], solution[5]), (Si_n_551, Si_k_551))
+    if cauchy_plot[0.6] != 0 and cauchy_plot[0.551] != 0:
+        exp_structure1 = Elip_Structure(70, 0.6, solution[3], (1,0), (cauchy_plot[0.6], solution[4]), (Si_n_451, Si_k_451))
+        exp_structure2 = Elip_Structure(70, 0.7, solution[3], (1,0), (cauchy_plot[0.7], solution[5]), (Si_n_551, Si_k_551))
 
         return 1-sqrt((exp_structure1.psi(r_p=exp_structure1.r_ijk_p(wave_length=0.451), r_s=exp_structure1.r_ijk_s(wave_length=0.451)) - model_psi_451)**2
                     + (exp_structure1.delta(r_p=exp_structure1.r_ijk_p(wave_length=0.451), r_s=exp_structure1.r_ijk_s(wave_length=0.451)) - model_delta_451)**2
@@ -54,15 +54,15 @@ def fitness_func(ga_solution, solution, solution_idx):
 
 def GA_1():
     ellipsometry_get_thickness = pg.GA(
-        num_generations=30,
-        num_parents_mating=100,
+        num_generations=50,
+        num_parents_mating=20,
         fitness_func=fitness_func,
-        sol_per_pop=1000,
+        sol_per_pop=200,
         num_genes=6,
         #A B C thickness k1 k2
         gene_space=[arange(1,5,0.005), arange(0.001,1,0.0005), arange(0,1,0.01), arange(0,1,0.0005), arange(0, 5, 0.01), arange(0, 5, 0.01)],
         parent_selection_type='rank',
-        keep_elitism=10,
+        keep_elitism=2,
         mutation_type='random',
         mutation_probability=0.5,
         random_mutation_min_val=-0.03,
@@ -82,13 +82,13 @@ def GA_1():
 def GA_2(solution):
     ellipsometry_get_thickness2 = pg.GA(
         num_generations=50,
-        num_parents_mating=100,
+        num_parents_mating=20,
         fitness_func=fitness_func,
-        sol_per_pop=1000,
+        sol_per_pop=200,
         num_genes=6,
         gene_space=[arange(solution[0]-0.1,solution[0]+0.1,0.001), arange(solution[1]-0.01,solution[1]+0.01,0.0001), arange(solution[2]-0.001, solution[2]+0.001, 0.001), arange(solution[3]-0.01,solution[3]+0.01,0.00001), arange(solution[4]-0.01, solution[4]+0.01, 0.001), arange(solution[5]-0.01, solution[5]+0.01, 0.001)],
         parent_selection_type='rank',
-        keep_elitism=10,
+        keep_elitism=2,
         mutation_type='random',
         mutation_probability=0.3,
         random_mutation_min_val=-0.03,
